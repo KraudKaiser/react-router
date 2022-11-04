@@ -1,8 +1,10 @@
 import { 
 	Outlet,
 	Link,
+	NavLink,
 	useLoaderData,
 	Form,
+	useNavigation,
  } from "react-router-dom"
 import { getContacts, createContact } from "../contact"
 
@@ -10,19 +12,22 @@ export async function action(){
 	await createContact()
 }
 
-export async function loader(){
-	const contacts = await getContacts()
+export async function loader({request}){
+	const url = new URL(request.url)
+	const q = url.searchParams.get("q")
+	const contacts = await getContacts(q)
 	return {contacts}
 }
 
 export default function root(){
 	const {contacts} = useLoaderData()
+	const navegation = useNavigation()
 	return(
 		<>
 			<div id="sidebar">
         <h1>React Router Contacts</h1>
         <div>
-          <form id="search-form" role="search">
+          <Form id="search-form" role="search">
             <input
               id="q"
               aria-label="Search contacts"
@@ -39,7 +44,7 @@ export default function root(){
               className="sr-only"
               aria-live="polite"
             ></div>
-          </form>
+          </Form>
           <Form method="post">
             <button type="submit">New</button>
           </Form>
@@ -49,7 +54,16 @@ export default function root(){
             <ul>
               {contacts.map((contact) => (
                 <li key={contact.id}>
-                  <Link to={`contacts/${contact.id}`}>
+                   <NavLink
+                    to={`contacts/${contact.id}`}
+                    className={({ isActive, isPending }) =>
+                      isActive
+                        ? "active"
+                        : isPending
+                        ? "pending"
+                        : ""
+                    }
+                  >
                     {contact.first || contact.last ? (
                       <>
                         {contact.first} {contact.last}
@@ -58,7 +72,7 @@ export default function root(){
                       <i>No Name</i>
                     )}{" "}
                     {contact.favorite && <span>★</span>}
-                  </Link>
+                  </NavLink>
                 </li>
               ))}
             </ul>
@@ -69,7 +83,11 @@ export default function root(){
           )}
 		</nav>
 		</div>
-		<div id="detail">
+		<div id="detail"
+			className={
+				navigation.state === "loading" ? "loading" : ""
+			}
+		>
 			<Outlet />
 		</div>
 		</>
